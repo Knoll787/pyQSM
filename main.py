@@ -3,6 +3,7 @@ import scipy as sp
 import os
 import pydicom 
 import nibabel as nib
+import subprocess
 
 
 def main():
@@ -75,7 +76,7 @@ def main():
         x = [int(len(ph_list)/echoTrainLength), echoTrainLength]
         NS, NE = np.unravel_index(i, x, order="F") # NS -> Number Scan, NE -> Number Echo
         imageData = np.transpose(a, (1,0))
-        ph[:,:, NS, NE] = imageData 
+        ph[:,:, NS, NE] = imageData / 4095*2*np.pi - np.pi
 
     # Setup output directory
     os.makedirs("output/", exist_ok=True)
@@ -90,7 +91,16 @@ def main():
         # Phase -> NIfTI
         nii = nib.Nifti1Image(ph[:,:,:,i], affine=np.eye(4))
         nii.to_filename("output/src/ph_" + str(i) + ".nii")
+        
 
+    # Brain Extraction
+    # Generate mask from magnitude of the 1st Echo -> Using FSL tools       
+    print("Extracting brain volume and generating mask...")
+    os.system('rm BET*')
+    command = '~/fsl/bin/bet2 output/src/mag_0.nii ./output/BET -f {} -m -w {}'.format(bet_thr, bet_smooth)
+    os.system(command)
+    #os.system('gunzip -f output/BET.nii.gz');
+    #os.system('gunzip -f output/BET_mask.nii.gz')
 
 
 if __name__ == "__main__":
