@@ -2,6 +2,7 @@ import numpy as np
 import scipy as sp
 import os
 import pydicom 
+import nibabel as nib
 
 
 def main():
@@ -53,13 +54,12 @@ def main():
     z_prjs = [Xz, Yz, Zz];
     
     # Generate array of ALL Magnitude image data
-    mag = np.empty([imageWidth, imageHeight, sequenceLength, echoTrainLength])
+    mag = np.zeros([imageWidth, imageHeight, sequenceLength, echoTrainLength])
     for i in range(0, len(mag_list)):
-        a = pydicom.dcmread(path_mag + mag_list[i])
-        a = a.pixel_array
+        a = pydicom.dcmread(path_mag + mag_list[i]).pixel_array
         x = [int(len(mag_list)/echoTrainLength), echoTrainLength]
-        NS, NE = np.unravel_index(i, x) # NS -> Number Scan, NE -> Number Echo
-        imageData = np.transpose(a, [1,0])
+        NS, NE = np.unravel_index(i, x, order="F") # NS -> Number Scan, NE -> Number Echo
+        imageData = np.transpose(a, (1,0))
         mag[:,:, NS, NE] = imageData 
     imsize = np.shape(mag)
     
@@ -73,9 +73,23 @@ def main():
         a = pydicom.dcmread(path_ph + ph_list[i])
         a = a.pixel_array
         x = [int(len(ph_list)/echoTrainLength), echoTrainLength]
-        NS, NE = np.unravel_index(i, x) # NS -> Number Scan, NE -> Number Echo
-        imageData = np.transpose(a, [1,0])
+        NS, NE = np.unravel_index(i, x, order="F") # NS -> Number Scan, NE -> Number Echo
+        imageData = np.transpose(a, (1,0))
         ph[:,:, NS, NE] = imageData 
+
+    # Setup output directory
+    os.makedirs("output/", exist_ok=True)
+    
+    # NIfTI Generation
+    os.makedirs("output/src", exist_ok=True)
+    for i in range(0, echoTrainLength):
+        # Magnitude -> NIfTI
+        nii = nib.Nifti1Image(mag[:,:,:,i], affine=np.eye(4))
+        nii.to_filename("output/src/mag_" + str(i) + ".nii")
+
+        # Phase -> NIfTI
+        nii = nib.Nifti1Image(ph[:,:,:,i], affine=np.eye(4))
+        nii.to_filename("output/src/ph_" + str(i) + ".nii")
 
 
 
