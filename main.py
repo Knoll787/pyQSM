@@ -3,7 +3,7 @@ import scipy as sp
 import os
 import pydicom 
 import nibabel as nib
-import subprocess
+from geme_cmb import geme_cmb
 
 
 def main():
@@ -99,8 +99,14 @@ def main():
     os.system('rm BET*')
     command = '~/fsl/bin/bet2 output/src/mag_0.nii ./output/BET -f {} -m -w {}'.format(bet_thr, bet_smooth)
     os.system(command)
-    #os.system('gunzip -f output/BET.nii.gz');
-    #os.system('gunzip -f output/BET_mask.nii.gz')
+    os.system('gunzip -f output/BET.nii.gz') # Masking file 
+    os.system('gunzip -f output/BET_mask.nii.gz') # Isolated brain
+
+    mask_img = nib.load('output/BET_mask.nii')
+    mask = mask_img.get_fdata()
+
+    
+    geme_cmb(mag*np.exp(1j*ph), vox, TE, mask)
 
 
 if __name__ == "__main__":
