@@ -82,6 +82,7 @@ def main():
     os.makedirs("output/", exist_ok=True)
     
     # NIfTI Generation
+    """
     os.makedirs("output/src", exist_ok=True)
     for i in range(0, echoTrainLength):
         # Magnitude -> NIfTI
@@ -101,6 +102,7 @@ def main():
     os.system(command)
     os.system('gunzip -f output/BET.nii.gz') # Masking file 
     os.system('gunzip -f output/BET_mask.nii.gz') # Isolated brain
+    """
 
     mask_img = nib.load('output/BET_mask.nii')
     mask = mask_img.get_fdata()

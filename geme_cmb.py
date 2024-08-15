@@ -29,7 +29,11 @@ def geme_cmb(img, vox, te,
     imsize = np.shape(img)
 
     np.seterr(divide='ignore')
-    img_diff = np.divide(img[:,:,:,2], img[:,:,:,1]) 
+    img = np.expand_dims(img, axis=4)
+    img_diff = np.divide(img[:,:,:,1,:], img[:,:,:,0,:]) 
     ph_diff = np.divide(img_diff, np.abs(img_diff))
-    ph_diff_cmd = np.sum(np.abs(img[:,:,:,1])*ph_diff)
-    print(ph_diff_cmd)
+
+    a = np.multiply(np.abs(img[:,:,:,0]), ph_diff)
+    ph_diff_cmb = np.sum(a, axis=3)
+    ph_diff_cmb[np.isnan(ph_diff_cmb)] = 0
+    print(ph_diff_cmb)
