@@ -1,5 +1,8 @@
 import numpy as np
 import scipy as sp
+import nibabel as nib
+from numpy import shape
+import os
 """
 Gradient-echo multi-echo combination (for phase).
 
@@ -36,4 +39,30 @@ def geme_cmb(img, vox, te,
     a = np.multiply(np.abs(img[:,:,:,0]), ph_diff)
     ph_diff_cmb = np.sum(a, axis=3)
     ph_diff_cmb[np.isnan(ph_diff_cmb)] = 0
-    print(ph_diff_cmb)
+    
+    nii = nib.Nifti1Image(np.angle(ph_diff_cmb), affine=np.eye(4))
+    nii.to_filename("output/ph_diff.nii")
+    
+    mag1 = np.sqrt(np.sum(np.abs(img[:,:,:,0,:]**2),axis=3))
+    mask_input = mask
+    a = mask.astype(bool)
+    b = np.median(mag1[a])
+    c = np.multiply(0.1, b)
+    mask = (mag1 > c)
+    mask = np.logical_or(mask, mask_input.astype(bool))
+    
+    NV, NP, NS = imsize[0:3]
+
+    with open('output/wrapped_phase_diff.dat', 'wb') as f:
+        np.angle(ph_diff_cmb).tofile(f)
+
+    mask_unwrp = (255 * mask).astype(np.uint8)
+    with open('output/mask_unwrp.dat', 'wb') as f:
+        mask_unwrp.tofile(f)
+
+    command = 'phase_unwrapping/3DSRNCP ' \
+                'output/wrapped_phase_diff.dat ' \
+                'output/mask_unwrp.dat ' \
+                'output/unwrapped_phase_diff.dat '\
+                '{} {} {} output/reliability_diff.dat'.format(NV, NP, NS)
+    os.system(command)
